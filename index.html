@@ -1,14 +1,342 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Wasserwart App</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1263a3">
+<title>Wasserwart-App</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#eef4f8;color:#17324b;font-family:Arial,sans-serif}
+header{background:#1263a3;color:white;padding:22px 16px}
+header h1{margin:0;font-size:26px}
+header p{margin:8px 0 0}
+main{max-width:720px;margin:auto;padding:14px}
+nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+button{font:inherit;cursor:pointer}
+nav button,.btn{border:0;border-radius:10px;padding:14px;background:#1263a3;color:white;font-weight:bold}
+nav button{background:white;color:#1263a3}
+nav button.active{background:#1263a3;color:white}
+.card{background:white;border-radius:14px;padding:18px;margin:12px 0;box-shadow:0 2px 8px #1232}
+h2{font-size:21px;margin-top:0}
+h3{margin-bottom:8px}
+label{display:block;font-weight:bold;margin:14px 0 6px}
+input,textarea,select{width:100%;font:inherit;padding:13px;border:1px solid #aebdca;border-radius:9px;background:white}
+input{font-size:19px}
+textarea{min-height:110px}
+.meter{border-top:1px solid #ddd;padding:12px 0}
+.meter:first-of-type{border:0}
+.small{color:#607588;font-size:14px}
+.result{background:#e9f5ed;padding:10px;border-radius:8px;margin-top:8px}
+.btn{width:100%;margin-top:15px}
+.secondary{background:#e5eef6;color:#17476d}
+.danger{background:#a72d36}
+.hidden{display:none}
+.total{font-size:26px;font-weight:bold;color:#1263a3}
+.entry{border-bottom:1px solid #ddd;padding:12px 0}
+</style>
 </head>
 <body>
-  <h1>Wasserwart App</h1>
-  <h2>Wassergenossenschaft</h2>
-  <p>Willkommen bei der Wasserwart-App!</p>
-  <p>Die Einrichtung funktioniert.</p>
+<header>
+<h1>Wasserwart-App</h1>
+<p>Wassergenossenschaft</p>
+</header>
+<main>
+<nav>
+<button onclick="show('ablesung')" id="tab-ablesung">Ablesung</button>
+<button onclick="show('reinigung')" id="tab-reinigung">Reinigung</button>
+<button onclick="show('verlauf')" id="tab-verlauf">Verlauf</button>
+<button onclick="show('daten')" id="tab-daten">Daten</button>
+</nav>
+
+<section id="ablesung">
+<div class="card">
+<h2>Monatliche Zählerablesung</h2>
+<label>Datum der Ablesung</label>
+<input type="date" id="datum">
+<p class="small">Die Stationen sind in Fahrreihenfolge angeordnet.</p>
+</div>
+<div id="stationen"></div>
+<div class="card">
+<h2>Zusammenfassung</h2>
+<p>Summe der erfassten Zählerdifferenzen</p>
+<div class="total" id="summe">0 m³</div>
+<p class="small">Die Summe ist keine bereinigte Netzverbrauchsbilanz, da auch Übergabe- und Pumpenzähler enthalten sein können.</p>
+<button class="btn" onclick="saveReading()">Ablesung speichern</button>
+</div>
+</section>
+
+<section id="reinigung" class="hidden">
+<div class="card">
+<h2>Reinigungsbuch</h2>
+<label>Datum</label>
+<input type="date" id="reindatum">
+<label>Station</label>
+<select id="reinstation"></select>
+<label>Durchgeführte Arbeiten</label>
+<textarea id="arbeiten" placeholder="Was wurde gereinigt oder kontrolliert?"></textarea>
+<label>Bemerkungen</label>
+<textarea id="bemerkung" placeholder="Besondere Vorkommnisse"></textarea>
+<button class="btn" onclick="saveCleaning()">Eintrag speichern</button>
+</div>
+<div class="card">
+<h2>Bisherige Einträge</h2>
+<div id="reinigungsliste"></div>
+</div>
+</section>
+
+<section id="verlauf" class="hidden">
+<div class="card">
+<h2>Frühere Ablesungen</h2>
+<div id="verlaufsliste"></div>
+</div>
+</section>
+
+<section id="daten" class="hidden">
+<div class="card">
+<h2>Datensicherung</h2>
+<p>Die Daten werden derzeit nur in diesem Browser auf diesem Gerät gespeichert.</p>
+<p>Bitte regelmäßig eine Sicherung herunterladen. Das Löschen von Browserdaten kann sonst alle Einträge entfernen.</p>
+<button class="btn" onclick="exportData()">Sicherung herunterladen</button>
+<label>Sicherung wiederherstellen</label>
+<input type="file" id="importfile" accept=".json" onchange="importData(event)">
+</div>
+</section>
+</main>
+
+<script>
+const stations=[
+{name:"Zentrale Brunnen",meters:[
+"HB Hundswies",
+"HB Wackersbach – Zähler 2"
+]},
+{name:"Hochbehälter Hundswies",meters:[
+"Hundswies – Hörstorf",
+"Obergallsbach",
+"HB Taxberg – Pumpe"
+]},
+{name:"Hochbehälter Taxberg",meters:[
+"Oberfreundorf – Lengau",
+"Taxberg – Weinberg"
+]},
+{name:"Hochbehälter Wackersbach",meters:[
+"Wackersbach – Rudling",
+"Sperneck – Limberg"
+]}
+];
+const KEY="wasserwart_dachsberg_v1";
+let db={readings:[],cleanings:[]};
+try{
+const saved=JSON.parse(localStorage.getItem(KEY));
+if(saved&&Array.isArray(saved.readings)&&Array.isArray(saved.cleanings))db=saved;
+}catch(e){console.error(e)}
+const $=id=>document.getElementById(id);
+const today=()=>new Date().toLocaleDateString("sv-SE");
+$("datum").value=today();
+$("reindatum").value=today();
+function store(){localStorage.setItem(KEY,JSON.stringify(db))}
+function show(page){
+["ablesung","reinigung","verlauf","daten"].forEach(id=>{
+$(id).classList.toggle("hidden",id!==page);
+$("tab-"+id).classList.toggle("active",id===page);
+});
+if(page==="verlauf")renderHistory();
+if(page==="reinigung")renderCleanings();
+}
+function allMeters(){
+return stations.flatMap(s=>s.meters.map(m=>({station:s.name,name:m,id:s.name+"|"+m})));
+}
+function previous(id,date){
+let found=null;
+db.readings.filter(r=>r.date<date).sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
+if(r.values[id]!==undefined&&r.values[id]!==null)found=r.values[id];
+});
+return found;
+}
+function number(v){
+if(v===null||v===undefined||v==="")return null;
+const n=Number(String(v).replace(",","."));
+return Number.isFinite(n)&&n>=0?n:null;
+}
+function fmt(n){
+return n.toLocaleString("de-AT",{maximumFractionDigits:3});
+}
+function renderMeters(){
+const date=$("datum").value;
+const existing=db.readings.find(r=>r.date===date);
+$("stationen").innerHTML="";
+stations.forEach(s=>{
+const card=document.createElement("div");
+card.className="card";
+const heading=document.createElement("h2");
+heading.textContent=s.name;
+card.appendChild(heading);
+s.meters.forEach(m=>{
+const id=s.name+"|"+m;
+const box=document.createElement("div");
+box.className="meter";
+const label=document.createElement("label");
+label.textContent=m;
+const prev=previous(id,date);
+const hint=document.createElement("div");
+hint.className="small";
+hint.textContent="Vorheriger Stand: "+(prev===null?"noch keiner":fmt(prev)+" m³");
+const input=document.createElement("input");
+input.type="number";
+input.min="0";
+input.step="any";
+input.inputMode="decimal";
+input.dataset.meter=id;
+if(existing&&existing.values[id]!==null&&existing.values[id]!==undefined)input.value=existing.values[id];
+input.placeholder="Aktueller Zählerstand";
+const result=document.createElement("div");
+result.className="result";
+result.dataset.result=id;
+input.addEventListener("input",calculate);
+box.append(label,hint,input,result);
+card.appendChild(box);
+});
+$("stationen").appendChild(card);
+});
+calculate();
+}
+function calculate(){
+let total=0;
+document.querySelectorAll("[data-meter]").forEach(input=>{
+const id=input.dataset.meter;
+const val=number(input.value);
+const prev=previous(id,$("datum").value);
+const result=[...document.querySelectorAll("[data-result]")].find(e=>e.dataset.result===id);
+if(val===null)result.textContent="Noch kein Stand eingegeben";
+else if(prev===null)result.textContent="Erste Ablesung – noch keine Differenz";
+else{
+const diff=val-prev;
+result.textContent=diff<0?"Achtung: Stand kleiner als vorheriger Stand":"Differenz: "+fmt(diff)+" m³";
+if(diff>=0)total+=diff;
+}
+});
+$("summe").textContent=fmt(total)+" m³";
+}
+function saveReading(){
+const date=$("datum").value;
+if(!date)return alert("Bitte Datum auswählen.");
+const values={};
+let count=0;
+let invalid=false;
+document.querySelectorAll("[data-meter]").forEach(input=>{
+const raw=input.value.trim();
+const val=number(raw);
+if(raw!==""&&val===null)invalid=true;
+values[input.dataset.meter]=val;
+if(val!==null)count++;
+});
+if(invalid)return alert("Bitte gültige, positive Zählerstände eingeben.");
+if(count===0)return alert("Bitte mindestens einen Zählerstand eingeben.");
+const existing=db.readings.findIndex(r=>r.date===date);
+if(existing>=0&&!confirm("Die Ablesung für dieses Datum überschreiben?"))return;
+if(existing>=0)db.readings.splice(existing,1);
+db.readings.push({date,values});
+db.readings.sort((a,b)=>a.date.localeCompare(b.date));
+store();
+renderMeters();
+alert("Ablesung gespeichert.");
+}
+function saveCleaning(){
+const work=$("arbeiten").value.trim();
+if(!work)return alert("Bitte Arbeiten eintragen.");
+db.cleanings.push({
+date:$("reindatum").value,
+station:$("reinstation").value,
+work,
+note:$("bemerkung").value.trim()
+});
+store();
+$("arbeiten").value="";
+$("bemerkung").value="";
+renderCleanings();
+alert("Reinigung gespeichert.");
+}
+function renderCleanings(){
+const area=$("reinigungsliste");
+area.replaceChildren();
+if(!db.cleanings.length){area.textContent="Noch keine Einträge.";return;}
+[...db.cleanings].reverse().forEach(c=>{
+const div=document.createElement("div");
+div.className="entry";
+const title=document.createElement("strong");
+title.textContent=c.date+" – "+c.station;
+const p=document.createElement("p");
+p.textContent=c.work;
+const note=document.createElement("p");
+note.className="small";
+note.textContent=c.note;
+div.append(title,p,note);
+area.appendChild(div);
+});
+}
+function renderHistory(){
+const area=$("verlaufsliste");
+area.replaceChildren();
+if(!db.readings.length){area.textContent="Noch keine Ablesungen.";return;}
+[...db.readings].reverse().forEach(r=>{
+const div=document.createElement("div");
+div.className="entry";
+const h=document.createElement("h3");
+h.textContent=r.date;
+div.appendChild(h);
+allMeters().forEach(m=>{
+const val=r.values[m.id];
+if(val===null||val===undefined)return;
+const p=document.createElement("p");
+p.textContent=m.name+": "+fmt(val)+" m³";
+div.appendChild(p);
+});
+const btn=document.createElement("button");
+btn.className="btn secondary";
+btn.textContent="Ablesung öffnen";
+btn.onclick=()=>{
+$("datum").value=r.date;
+show("ablesung");
+renderMeters();
+window.scrollTo(0,0);
+};
+div.appendChild(btn);
+area.appendChild(div);
+});
+}
+function exportData(){
+const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+const url=URL.createObjectURL(blob);
+const a=document.createElement("a");
+a.href=url;
+a.download="wasserwart-sicherung-"+today()+".json";
+a.click();
+setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function importData(event){
+const file=event.target.files[0];
+if(!file)return;
+try{
+const data=JSON.parse(await file.text());
+if(!Array.isArray(data.readings)||!Array.isArray(data.cleanings))throw Error();
+if(!confirm("Vorhandene Daten durch die Sicherung ersetzen?"))return;
+db=data;
+store();
+renderMeters();
+alert("Sicherung wiederhergestellt.");
+}catch(e){alert("Ungültige Sicherungsdatei.");}
+event.target.value="";
+}
+stations.forEach(s=>{
+const o=document.createElement("option");
+o.value=s.name;
+o.textContent=s.name;
+$("reinstation").appendChild(o);
+});
+$("datum").addEventListener("change",renderMeters);
+renderMeters();
+show("ablesung");
+</script>
 </body>
 </html>
