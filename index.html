@@ -1,342 +1,45 @@
-
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#1263a3">
-<title>Wasserwart-App</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#eef4f8;color:#17324b;font-family:Arial,sans-serif}
-header{background:#1263a3;color:white;padding:22px 16px}
-header h1{margin:0;font-size:26px}
-header p{margin:8px 0 0}
-main{max-width:720px;margin:auto;padding:14px}
-nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
-button{font:inherit;cursor:pointer}
-nav button,.btn{border:0;border-radius:10px;padding:14px;background:#1263a3;color:white;font-weight:bold}
-nav button{background:white;color:#1263a3}
-nav button.active{background:#1263a3;color:white}
-.card{background:white;border-radius:14px;padding:18px;margin:12px 0;box-shadow:0 2px 8px #1232}
-h2{font-size:21px;margin-top:0}
-h3{margin-bottom:8px}
-label{display:block;font-weight:bold;margin:14px 0 6px}
-input,textarea,select{width:100%;font:inherit;padding:13px;border:1px solid #aebdca;border-radius:9px;background:white}
-input{font-size:19px}
-textarea{min-height:110px}
-.meter{border-top:1px solid #ddd;padding:12px 0}
-.meter:first-of-type{border:0}
-.small{color:#607588;font-size:14px}
-.result{background:#e9f5ed;padding:10px;border-radius:8px;margin-top:8px}
-.btn{width:100%;margin-top:15px}
-.secondary{background:#e5eef6;color:#17476d}
-.danger{background:#a72d36}
-.hidden{display:none}
-.total{font-size:26px;font-weight:bold;color:#1263a3}
-.entry{border-bottom:1px solid #ddd;padding:12px 0}
-</style>
-</head>
-<body>
-<header>
-<h1>Wasserwart-App</h1>
-<p>Wassergenossenschaft</p>
-</header>
-<main>
-<nav>
-<button onclick="show('ablesung')" id="tab-ablesung">Ablesung</button>
-<button onclick="show('reinigung')" id="tab-reinigung">Reinigung</button>
-<button onclick="show('verlauf')" id="tab-verlauf">Verlauf</button>
-<button onclick="show('daten')" id="tab-daten">Daten</button>
-</nav>
-
-<section id="ablesung">
-<div class="card">
-<h2>Monatliche Zählerablesung</h2>
-<label>Datum der Ablesung</label>
-<input type="date" id="datum">
-<p class="small">Die Stationen sind in Fahrreihenfolge angeordnet.</p>
-</div>
-<div id="stationen"></div>
-<div class="card">
-<h2>Zusammenfassung</h2>
-<p>Summe der erfassten Zählerdifferenzen</p>
-<div class="total" id="summe">0 m³</div>
-<p class="small">Die Summe ist keine bereinigte Netzverbrauchsbilanz, da auch Übergabe- und Pumpenzähler enthalten sein können.</p>
-<button class="btn" onclick="saveReading()">Ablesung speichern</button>
-</div>
-</section>
-
-<section id="reinigung" class="hidden">
-<div class="card">
-<h2>Reinigungsbuch</h2>
-<label>Datum</label>
-<input type="date" id="reindatum">
-<label>Station</label>
-<select id="reinstation"></select>
-<label>Durchgeführte Arbeiten</label>
-<textarea id="arbeiten" placeholder="Was wurde gereinigt oder kontrolliert?"></textarea>
-<label>Bemerkungen</label>
-<textarea id="bemerkung" placeholder="Besondere Vorkommnisse"></textarea>
-<button class="btn" onclick="saveCleaning()">Eintrag speichern</button>
-</div>
-<div class="card">
-<h2>Bisherige Einträge</h2>
-<div id="reinigungsliste"></div>
-</div>
-</section>
-
-<section id="verlauf" class="hidden">
-<div class="card">
-<h2>Frühere Ablesungen</h2>
-<div id="verlaufsliste"></div>
-</div>
-</section>
-
-<section id="daten" class="hidden">
-<div class="card">
-<h2>Datensicherung</h2>
-<p>Die Daten werden derzeit nur in diesem Browser auf diesem Gerät gespeichert.</p>
-<p>Bitte regelmäßig eine Sicherung herunterladen. Das Löschen von Browserdaten kann sonst alle Einträge entfernen.</p>
-<button class="btn" onclick="exportData()">Sicherung herunterladen</button>
-<label>Sicherung wiederherstellen</label>
-<input type="file" id="importfile" accept=".json" onchange="importData(event)">
-</div>
-</section>
-</main>
-
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1263a3"><title>Wasserwart-App</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#eef4f8;color:#17324b;font:17px Arial,sans-serif}header{background:#1263a3;color:white;padding:22px 16px}h1{margin:0;font-size:26px}header p{margin:8px 0 0}main{max-width:720px;margin:auto;padding:14px}nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:14px;background:#1263a3;color:white;font-weight:bold}nav button{background:white;color:#1263a3}nav button.active{background:#1263a3;color:white}.card{background:white;border-radius:14px;padding:18px;margin:12px 0;box-shadow:0 2px 8px #1232}h2{font-size:21px;margin-top:0}label{display:block;font-weight:bold;margin:14px 0 6px}input,textarea,select{width:100%;font:inherit;padding:13px;border:1px solid #aebdca;border-radius:9px;background:white}input{font-size:19px}textarea{min-height:100px}.meter{border-top:1px solid #ddd;padding:12px 0}.small{color:#607588;font-size:14px}.result{background:#e9f5ed;padding:10px;border-radius:8px;margin-top:8px}.btn{width:100%;margin-top:15px}.secondary{background:#e5eef6;color:#17476d}.hidden{display:none}.total{font-size:26px;font-weight:bold;color:#1263a3}.entry{border-bottom:1px solid #ddd;padding:12px 0}.error{color:#a72d36;white-space:pre-wrap}.notice{background:#fff3d7;padding:12px;border-radius:8px}</style>
+</head><body><header><h1>Wasserwart-App</h1><p>Wassergenossenschaft</p></header><main>
+<section id="setup" class="card"><h2>Einmalige Verbindung</h2><p class="small">Hier nur die öffentliche Supabase-Projektadresse und den Publishable Key eintragen. Niemals einen Secret Key oder service_role Key verwenden.</p><label>Supabase Project URL</label><input id="url" placeholder="https://projekt.supabase.co" autocomplete="off"><label>Publishable Key</label><input id="key" placeholder="sb_publishable_..." autocomplete="off"><button class="btn" id="connect">Verbindung prüfen</button><p id="setupmsg" class="error"></p></section>
+<section id="login" class="card hidden"><h2>Anmelden</h2><label>E-Mail</label><input type="email" id="email" autocomplete="username"><label>Passwort</label><input type="password" id="password" autocomplete="current-password"><button class="btn" id="signin">Anmelden</button><p id="loginmsg" class="error"></p></section>
+<section id="app" class="hidden"><div class="card"><span id="who" class="small"></span><button class="secondary" id="logout" style="float:right;padding:8px">Abmelden</button><div style="clear:both"></div><p id="status" class="small"></p></div><nav><button data-page="ablesung">Ablesung</button><button data-page="reinigung">Reinigung</button><button data-page="verlauf">Verlauf</button><button data-page="daten">Daten</button></nav>
+<section id="ablesung"><div class="card"><h2>Monatliche Zählerablesung</h2><label>Datum</label><input type="date" id="datum"><p class="small">Stationen in Fahrreihenfolge.</p></div><div id="stationen"></div><div class="card"><h2>Zusammenfassung</h2><p>Summe der erfassten Zählerdifferenzen</p><div class="total" id="summe">0 m³</div><p class="small">Keine bereinigte Netzverbrauchsbilanz: Übergabe- und Pumpenzähler können enthalten sein.</p><button class="btn" id="save">Ablesung in Supabase speichern</button></div></section>
+<section id="reinigung" class="hidden"><div class="card"><h2>Reinigungsbuch</h2><p class="notice">Die Datenbankfelder des Reinigungsbuchs müssen noch geprüft werden. Bis dahin bleiben neue Reinigungseinträge lokal auf diesem Gerät. Bitte regelmäßig sichern.</p><label>Datum</label><input type="date" id="reindatum"><label>Station</label><select id="reinstation"></select><label>Arbeiten</label><textarea id="arbeiten"></textarea><label>Bemerkungen</label><textarea id="bemerkung"></textarea><button class="btn" id="saveclean">Reinigung lokal speichern</button></div><div class="card"><h2>Einträge auf diesem Gerät</h2><div id="reinigungsliste"></div></div></section>
+<section id="verlauf" class="hidden"><div class="card"><h2>Frühere Ablesungen (Supabase)</h2><div id="verlaufsliste"></div></div></section>
+<section id="daten" class="hidden"><div class="card"><h2>Datensicherung</h2><p>Die Sicherung enthält die geladenen Supabase-Ablesungen und lokale Reinigungseinträge. Sie ersetzt kein regelmäßiges Datenbank-Backup.</p><button class="btn" id="export">JSON-Sicherung herunterladen</button><p class="small">Alte lokale Daten der bisherigen App werden von dieser Version nicht gelöscht. Bitte alte Browserdaten nicht löschen.</p><button class="btn secondary" id="refresh">Daten neu laden</button><button class="btn secondary" id="resetconfig">Verbindungseinstellungen zurücksetzen</button></div></section></section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-const stations=[
-{name:"Zentrale Brunnen",meters:[
-"HB Hundswies",
-"HB Wackersbach – Zähler 2"
-]},
-{name:"Hochbehälter Hundswies",meters:[
-"Hundswies – Hörstorf",
-"Obergallsbach",
-"HB Taxberg – Pumpe"
-]},
-{name:"Hochbehälter Taxberg",meters:[
-"Oberfreundorf – Lengau",
-"Taxberg – Weinberg"
-]},
-{name:"Hochbehälter Wackersbach",meters:[
-"Wackersbach – Rudling",
-"Sperneck – Limberg"
-]}
-];
-const KEY="wasserwart_dachsberg_v1";
-let db={readings:[],cleanings:[]};
-try{
-const saved=JSON.parse(localStorage.getItem(KEY));
-if(saved&&Array.isArray(saved.readings)&&Array.isArray(saved.cleanings))db=saved;
-}catch(e){console.error(e)}
-const $=id=>document.getElementById(id);
-const today=()=>new Date().toLocaleDateString("sv-SE");
-$("datum").value=today();
-$("reindatum").value=today();
-function store(){localStorage.setItem(KEY,JSON.stringify(db))}
-function show(page){
-["ablesung","reinigung","verlauf","daten"].forEach(id=>{
-$(id).classList.toggle("hidden",id!==page);
-$("tab-"+id).classList.toggle("active",id===page);
-});
-if(page==="verlauf")renderHistory();
-if(page==="reinigung")renderCleanings();
-}
-function allMeters(){
-return stations.flatMap(s=>s.meters.map(m=>({station:s.name,name:m,id:s.name+"|"+m})));
-}
-function previous(id,date){
-let found=null;
-db.readings.filter(r=>r.date<date).sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
-if(r.values[id]!==undefined&&r.values[id]!==null)found=r.values[id];
-});
-return found;
-}
-function number(v){
-if(v===null||v===undefined||v==="")return null;
-const n=Number(String(v).replace(",","."));
-return Number.isFinite(n)&&n>=0?n:null;
-}
-function fmt(n){
-return n.toLocaleString("de-AT",{maximumFractionDigits:3});
-}
-function renderMeters(){
-const date=$("datum").value;
-const existing=db.readings.find(r=>r.date===date);
-$("stationen").innerHTML="";
-stations.forEach(s=>{
-const card=document.createElement("div");
-card.className="card";
-const heading=document.createElement("h2");
-heading.textContent=s.name;
-card.appendChild(heading);
-s.meters.forEach(m=>{
-const id=s.name+"|"+m;
-const box=document.createElement("div");
-box.className="meter";
-const label=document.createElement("label");
-label.textContent=m;
-const prev=previous(id,date);
-const hint=document.createElement("div");
-hint.className="small";
-hint.textContent="Vorheriger Stand: "+(prev===null?"noch keiner":fmt(prev)+" m³");
-const input=document.createElement("input");
-input.type="number";
-input.min="0";
-input.step="any";
-input.inputMode="decimal";
-input.dataset.meter=id;
-if(existing&&existing.values[id]!==null&&existing.values[id]!==undefined)input.value=existing.values[id];
-input.placeholder="Aktueller Zählerstand";
-const result=document.createElement("div");
-result.className="result";
-result.dataset.result=id;
-input.addEventListener("input",calculate);
-box.append(label,hint,input,result);
-card.appendChild(box);
-});
-$("stationen").appendChild(card);
-});
-calculate();
-}
-function calculate(){
-let total=0;
-document.querySelectorAll("[data-meter]").forEach(input=>{
-const id=input.dataset.meter;
-const val=number(input.value);
-const prev=previous(id,$("datum").value);
-const result=[...document.querySelectorAll("[data-result]")].find(e=>e.dataset.result===id);
-if(val===null)result.textContent="Noch kein Stand eingegeben";
-else if(prev===null)result.textContent="Erste Ablesung – noch keine Differenz";
-else{
-const diff=val-prev;
-result.textContent=diff<0?"Achtung: Stand kleiner als vorheriger Stand":"Differenz: "+fmt(diff)+" m³";
-if(diff>=0)total+=diff;
-}
-});
-$("summe").textContent=fmt(total)+" m³";
-}
-function saveReading(){
-const date=$("datum").value;
-if(!date)return alert("Bitte Datum auswählen.");
-const values={};
-let count=0;
-let invalid=false;
-document.querySelectorAll("[data-meter]").forEach(input=>{
-const raw=input.value.trim();
-const val=number(raw);
-if(raw!==""&&val===null)invalid=true;
-values[input.dataset.meter]=val;
-if(val!==null)count++;
-});
-if(invalid)return alert("Bitte gültige, positive Zählerstände eingeben.");
-if(count===0)return alert("Bitte mindestens einen Zählerstand eingeben.");
-const existing=db.readings.findIndex(r=>r.date===date);
-if(existing>=0&&!confirm("Die Ablesung für dieses Datum überschreiben?"))return;
-if(existing>=0)db.readings.splice(existing,1);
-db.readings.push({date,values});
-db.readings.sort((a,b)=>a.date.localeCompare(b.date));
-store();
-renderMeters();
-alert("Ablesung gespeichert.");
-}
-function saveCleaning(){
-const work=$("arbeiten").value.trim();
-if(!work)return alert("Bitte Arbeiten eintragen.");
-db.cleanings.push({
-date:$("reindatum").value,
-station:$("reinstation").value,
-work,
-note:$("bemerkung").value.trim()
-});
-store();
-$("arbeiten").value="";
-$("bemerkung").value="";
-renderCleanings();
-alert("Reinigung gespeichert.");
-}
-function renderCleanings(){
-const area=$("reinigungsliste");
-area.replaceChildren();
-if(!db.cleanings.length){area.textContent="Noch keine Einträge.";return;}
-[...db.cleanings].reverse().forEach(c=>{
-const div=document.createElement("div");
-div.className="entry";
-const title=document.createElement("strong");
-title.textContent=c.date+" – "+c.station;
-const p=document.createElement("p");
-p.textContent=c.work;
-const note=document.createElement("p");
-note.className="small";
-note.textContent=c.note;
-div.append(title,p,note);
-area.appendChild(div);
-});
-}
-function renderHistory(){
-const area=$("verlaufsliste");
-area.replaceChildren();
-if(!db.readings.length){area.textContent="Noch keine Ablesungen.";return;}
-[...db.readings].reverse().forEach(r=>{
-const div=document.createElement("div");
-div.className="entry";
-const h=document.createElement("h3");
-h.textContent=r.date;
-div.appendChild(h);
-allMeters().forEach(m=>{
-const val=r.values[m.id];
-if(val===null||val===undefined)return;
-const p=document.createElement("p");
-p.textContent=m.name+": "+fmt(val)+" m³";
-div.appendChild(p);
-});
-const btn=document.createElement("button");
-btn.className="btn secondary";
-btn.textContent="Ablesung öffnen";
-btn.onclick=()=>{
-$("datum").value=r.date;
-show("ablesung");
-renderMeters();
-window.scrollTo(0,0);
-};
-div.appendChild(btn);
-area.appendChild(div);
-});
-}
-function exportData(){
-const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
-const url=URL.createObjectURL(blob);
-const a=document.createElement("a");
-a.href=url;
-a.download="wasserwart-sicherung-"+today()+".json";
-a.click();
-setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-async function importData(event){
-const file=event.target.files[0];
-if(!file)return;
-try{
-const data=JSON.parse(await file.text());
-if(!Array.isArray(data.readings)||!Array.isArray(data.cleanings))throw Error();
-if(!confirm("Vorhandene Daten durch die Sicherung ersetzen?"))return;
-db=data;
-store();
-renderMeters();
-alert("Sicherung wiederhergestellt.");
-}catch(e){alert("Ungültige Sicherungsdatei.");}
-event.target.value="";
-}
-stations.forEach(s=>{
-const o=document.createElement("option");
-o.value=s.name;
-o.textContent=s.name;
-$("reinstation").appendChild(o);
-});
-$("datum").addEventListener("change",renderMeters);
-renderMeters();
-show("ablesung");
-</script>
-</body>
-</html>
+'use strict';
+const $=id=>document.getElementById(id),today=()=>{let d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
+const stations=[{name:'Zentrale Brunnen',meters:['HB Hundswies','HB Wackersbach – Zähler 2']},{name:'Hochbehälter Hundswies',meters:['Hundswies – Hörstorf','Obergallsbach','HB Taxberg – Pumpe']},{name:'Hochbehälter Taxberg',meters:['Oberfreundorf – Lengau','Taxberg – Weinberg']},{name:'Hochbehälter Wackersbach',meters:['Wackersbach – Rudling','Sperneck – Limberg']}];
+const localKey='wasserwart_dachsberg_v1';let client=null,meters=[],readings=[],cleanings=[];
+try{const d=JSON.parse(localStorage.getItem(localKey));if(Array.isArray(d?.cleanings))cleanings=d.cleanings}catch(e){}
+$('datum').value=today();$('reindatum').value=today();
+function message(id,e){$(id).textContent=typeof e==='string'?e:(e?.message||String(e))}
+function fmt(v){return Number(v).toLocaleString('de-AT',{maximumFractionDigits:3})}
+function num(v){if(v===''||v==null)return null;const n=Number(String(v).replace(',','.'));return Number.isFinite(n)&&n>=0?n:null}
+function validConfig(){const url=$('url').value.trim().replace(/\/$/,'');const key=$('key').value.trim();if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url))throw Error('Bitte die vollständige Supabase Project URL eintragen.');if(!key.startsWith('sb_publishable_')&&!key.startsWith('eyJ'))throw Error('Bitte einen Publishable Key eingeben, keinen Secret Key.');if(!window.supabase?.createClient)throw Error('Supabase-Bibliothek konnte nicht geladen werden. Internetverbindung prüfen.');return {url,key}}
+async function connect(){try{const c=validConfig();client=window.supabase.createClient(c.url,c.key,{auth:{persistSession:true,autoRefreshToken:true}});localStorage.setItem('ww_supabase_public',JSON.stringify(c));$('setup').classList.add('hidden');const {data:{session},error}=await client.auth.getSession();if(error)throw error;if(session)await enter();else $('login').classList.remove('hidden')}catch(e){message('setupmsg',e);$('setup').classList.remove('hidden')}}
+$('connect').onclick=connect;
+$('signin').onclick=async()=>{try{message('loginmsg','');const {error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await enter()}catch(e){message('loginmsg',e)}};
+$('logout').onclick=async()=>{await client.auth.signOut();$('app').classList.add('hidden');$('login').classList.remove('hidden');$('password').value=''};
+$('resetconfig').onclick=()=>{if(!confirm('Nur die Verbindungseinstellungen auf diesem Gerät zurücksetzen?'))return;localStorage.removeItem('ww_supabase_public');location.reload()};
+async function enter(){try{$('login').classList.add('hidden');$('app').classList.remove('hidden');const {data:{user}}=await client.auth.getUser();$('who').textContent=user?.email||'Angemeldet';await load();show('ablesung')}catch(e){message('status','Fehler beim Laden: '+e.message)}}
+async function load(){message('status','Lade Daten aus Supabase ...');const [a,b]=await Promise.all([client.from('wasserzaehler').select('id,station_id,name,reihenfolge').order('reihenfolge'),client.from('ablesungen').select('id,wasserzaehler_id,ablesedatum,monat,zaehlerstand').order('ablesedatum',{ascending:true})]);if(a.error)throw a.error;if(b.error)throw b.error;meters=a.data||[];readings=b.data||[];message('status',`${meters.length} Zähler und ${readings.length} Ablesungen aus Supabase geladen.`);renderMeters();renderHistory()}
+function show(page){['ablesung','reinigung','verlauf','daten'].forEach(id=>{$(id).classList.toggle('hidden',id!==page);document.querySelector(`[data-page="${id}"]`).classList.toggle('active',id===page)});if(page==='verlauf')renderHistory();if(page==='reinigung')renderCleanings()}
+document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>show(b.dataset.page));
+function prior(id,date){let v=null;readings.filter(r=>Number(r.wasserzaehler_id)===Number(id)&&r.ablesedatum<date).forEach(r=>v=Number(r.zaehlerstand));return v}
+function renderMeters(){const date=$('datum').value,root=$('stationen');root.replaceChildren();if(!meters.length){root.textContent='Keine Wasserzähler aus Supabase geladen. Bitte Berechtigungen prüfen.';return}const ids=[...new Set(meters.map(m=>m.station_id))];ids.forEach(sid=>{const c=document.createElement('div');c.className='card';const h=document.createElement('h2');h.textContent=stations[Number(sid)-1]?.name||`Station ${sid}`;c.append(h);meters.filter(m=>m.station_id===sid).forEach(m=>{const b=document.createElement('div');b.className='meter';const l=document.createElement('label');l.textContent=m.name;const hint=document.createElement('div');hint.className='small';const p=prior(m.id,date);hint.textContent='Vorheriger Stand: '+(p==null?'noch keiner':fmt(p)+' m³');const input=document.createElement('input');input.type='number';input.min='0';input.step='any';input.inputMode='decimal';input.placeholder='Aktueller Zählerstand';input.dataset.meter=m.id;const existing=readings.find(r=>Number(r.wasserzaehler_id)===Number(m.id)&&r.ablesedatum===date);if(existing)input.value=existing.zaehlerstand;const result=document.createElement('div');result.className='result';result.dataset.result=m.id;input.oninput=calculate;b.append(l,hint,input,result);c.append(b)});root.append(c)});calculate()}
+function calculate(){let total=0;document.querySelectorAll('[data-meter]').forEach(i=>{const v=num(i.value),p=prior(i.dataset.meter,$('datum').value),r=document.querySelector(`[data-result="${i.dataset.meter}"]`);if(v===null)r.textContent='Noch kein Stand eingegeben';else if(p===null)r.textContent='Erste Ablesung – noch keine Differenz';else if(v<p)r.textContent='Achtung: Stand kleiner als vorheriger Stand';else{r.textContent='Differenz: '+fmt(v-p)+' m³';total+=v-p}});$('summe').textContent=fmt(total)+' m³'}
+$('datum').onchange=renderMeters;
+$('save').onclick=async()=>{const date=$('datum').value;if(!date)return alert('Datum fehlt.');const month=date.slice(0,7)+'-01';const rows=[];for(const i of document.querySelectorAll('[data-meter]')){if(i.value.trim()==='')continue;const v=num(i.value);if(v===null)return alert('Ungültiger Zählerstand.');if(prior(i.dataset.meter,date)!==null&&v<prior(i.dataset.meter,date)&&!confirm('Ein Zählerstand ist kleiner als der vorherige. Trotzdem speichern?'))return;rows.push({wasserzaehler_id:Number(i.dataset.meter),ablesedatum:date,monat:month,zaehlerstand:v})}if(!rows.length)return alert('Bitte einen Zählerstand eingeben.');if(!confirm(`${rows.length} Zählerstand/Zählerstände in Supabase speichern? Bereits vorhandene Werte für dasselbe Datum werden aktualisiert.`))return;const btn=$('save');btn.disabled=true;try{for(const row of rows){const old=readings.find(r=>Number(r.wasserzaehler_id)===row.wasserzaehler_id&&r.ablesedatum===date);const res=old?await client.from('ablesungen').update(row).eq('id',old.id).select('id'):await client.from('ablesungen').insert(row).select('id');if(res.error)throw res.error;if(!res.data?.length)throw Error('Speichern nicht bestätigt. Bitte RLS-Richtlinie prüfen.')}await load();alert('Ablesung in Supabase gespeichert.')}catch(e){alert('Speichern fehlgeschlagen: '+e.message+'\nBitte vor erneutem Speichern die Daten neu laden.')}finally{btn.disabled=false}};
+function renderHistory(){const area=$('verlaufsliste');area.replaceChildren();if(!readings.length){area.textContent='Noch keine Supabase-Ablesungen.';return}const dates=[...new Set(readings.map(r=>r.ablesedatum))].sort().reverse();dates.forEach(date=>{const d=document.createElement('div');d.className='entry';const h=document.createElement('h3');h.textContent=date;d.append(h);readings.filter(r=>r.ablesedatum===date).forEach(r=>{const p=document.createElement('p');p.textContent=(meters.find(m=>Number(m.id)===Number(r.wasserzaehler_id))?.name||'Zähler '+r.wasserzaehler_id)+': '+fmt(r.zaehlerstand)+' m³';d.append(p)});const b=document.createElement('button');b.className='btn secondary';b.textContent='Ablesung öffnen';b.onclick=()=>{$('datum').value=date;show('ablesung');renderMeters();window.scrollTo(0,0)};d.append(b);area.append(d)})}
+stations.forEach(s=>{const o=document.createElement('option');o.textContent=s.name;o.value=s.name;$('reinstation').append(o)});
+$('saveclean').onclick=()=>{const work=$('arbeiten').value.trim();if(!work)return alert('Bitte Arbeiten eintragen.');cleanings.push({date:$('reindatum').value,station:$('reinstation').value,work,note:$('bemerkung').value.trim()});const old=JSON.parse(localStorage.getItem(localKey)||'{}');old.readings=Array.isArray(old.readings)?old.readings:[];old.cleanings=cleanings;localStorage.setItem(localKey,JSON.stringify(old));$('arbeiten').value='';$('bemerkung').value='';renderCleanings();alert('Reinigung nur lokal gespeichert. Bitte Sicherung herunterladen.')};
+function renderCleanings(){const a=$('reinigungsliste');a.replaceChildren();if(!cleanings.length){a.textContent='Noch keine lokalen Reinigungseinträge.';return}cleanings.slice().reverse().forEach(c=>{const d=document.createElement('div');d.className='entry';const h=document.createElement('strong');h.textContent=c.date+' – '+c.station;const p=document.createElement('p');p.textContent=c.work;const n=document.createElement('p');n.className='small';n.textContent=c.note||'';d.append(h,p,n);a.append(d)})}
+$('export').onclick=()=>{const data={exported_at:new Date().toISOString(),supabase_readings:readings,supabase_meters:meters,local_cleanings:cleanings};const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='wasserwart-sicherung-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+$('refresh').onclick=()=>load().catch(e=>alert(e.message));
+try{const c=JSON.parse(localStorage.getItem('ww_supabase_public'));if(c?.url&&c?.key){$('url').value=c.url;$('key').value=c.key;connect()}}catch(e){}
+</script></body></html>
