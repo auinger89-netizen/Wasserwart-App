@@ -118,4 +118,10 @@ function renderCleanings(){const a=$('reinigungsliste');a.replaceChildren();if(!
 $('export').onclick=()=>{const data={exported_at:new Date().toISOString(),supabase_readings:readings,supabase_meters:meters,local_cleanings:cleanings};const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='wasserwart-sicherung-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
 $('refresh').onclick=()=>load().catch(e=>alert(e.message));
 try{const c=JSON.parse(localStorage.getItem('ww_supabase_public'));if(c?.url&&c?.key){$('url').value=c.url;$('key').value=c.key;connect()}}catch(e){}
+ const cfg = window.WASSERWART_CONFIG;
+if (cfg?.supabaseUrl && cfg?.supabasePublishableKey) {
+  $('url').value = cfg.supabaseUrl;
+  $('key').value = cfg.supabasePublishableKey;
+  connect();
+}
 </script></body></html>
