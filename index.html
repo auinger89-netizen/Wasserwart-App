@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1263a3"><title>Wasserwart-App – WG Gallsbach–Wackersbach</title><link rel="apple-touch-icon" sizes="512x512" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Wasserwart"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1263a3"><title>Wasserwart-App – WG Gallsbach–Wackersbach</title><link rel="apple-touch-icon" sizes="512x512" href="logo.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Wasserwart"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
 *{box-sizing:border-box}body{margin:0;background:#eef4f8;color:#17324b;font:17px Arial,sans-serif}header{background:#1263a3;color:white;padding:18px 16px;text-align:center}header img{display:block;width:min(100%,300px);margin:0 auto 12px;border-radius:12px;background:white}h1{margin:0;font-size:26px}header p{margin:8px 0 0}main{max-width:720px;margin:auto;padding:14px}nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:18px}button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:14px;background:#1263a3;color:white;font-weight:bold}button:disabled{opacity:.5}nav button{background:white;color:#1263a3}nav button.active{background:#1263a3;color:white}.card{background:white;border-radius:14px;padding:18px;margin:12px 0;box-shadow:0 2px 8px #1232}h2{font-size:21px;margin-top:0}label{display:block;font-weight:bold;margin:14px 0 6px}input,textarea,select{width:100%;font:inherit;padding:13px;border:1px solid #aebdca;border-radius:9px;background:white}input{font-size:19px}textarea{min-height:100px}.meter{border-top:1px solid #ddd;padding:12px 0}.small{color:#607588;font-size:14px}.result{background:#e9f5ed;padding:10px;border-radius:8px;margin-top:8px}.btn{width:100%;margin-top:15px}.secondary{background:#e5eef6;color:#17476d}.danger{background:#a72d36}.hidden{display:none}.total{font-size:26px;font-weight:bold;color:#1263a3}.entry{border-bottom:1px solid #ddd;padding:12px 0}.error{color:#a72d36;white-space:pre-wrap}.notice{background:#fff3d7;padding:12px;border-radius:8px}.entry-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.entry-actions button{font-size:15px}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:9px}.metric{background:#edf5fb;border-radius:10px;padding:12px}.metric strong{display:block;font-size:23px;color:#1263a3;margin-top:6px}.barrow{display:grid;grid-template-columns:80px 1fr 90px;align-items:center;gap:8px;margin:11px 0;font-size:14px}.bartrack{height:15px;border-radius:9px;background:#e5eef6;overflow:hidden}.barfill{height:100%;background:#1263a3;border-radius:9px}.warn{background:#fff3d7;padding:12px;border-radius:8px;margin:12px 0}.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:9px 6px;border-bottom:1px solid #d9e2e9;text-align:left}td:last-child,th:last-child{text-align:right}
 </style></head><body>
@@ -12,8 +12,8 @@
 <section id="verlauf" class="hidden"><div class="card"><h2>Frühere Ablesungen (Supabase)</h2><p class="small">Jede Ablesung bleibt einzeln erhalten, auch bei mehreren Messungen am selben Tag. Fehlerhafte Werte kann der Administrator löschen.</p><div id="verlaufsliste"></div></div></section>
 <section id="analyse" class="hidden">
 <div class="card"><h2>Verbrauchsanalyse</h2><p class="small">Berechnung aus den tatsächlichen Ablesedaten. Wochen-, Monats- und Tageswerte zwischen zwei Ablesungen sind gleichmäßig verteilte <strong>Schätzwerte</strong>, keine täglichen Messungen.</p>
-<label for="analysisMeter">Zähler auswählen</label><select id="analysisMeter"></select>
-<label for="analysisPeriod">Auswertungszeitraum</label><select id="analysisPeriod"><option value="week">Wochen</option><option value="month" selected>Monate</option><option value="year">Jahre</option></select>
+<h3>Gesamtübersicht aller Zähler</h3><label for="analysisPeriod">Auswertungszeitraum</label><select id="analysisPeriod"><option value="week">Wochen</option><option value="month" selected>Monate</option><option value="year">Jahre</option></select><label for="overviewDate">Zeitraum auswählen (Datum)</label><input type="date" id="overviewDate"><div id="overviewOutput"></div><h3>Verbrauchsverlauf</h3><label for="trendMetric">Anzeige</label><select id="trendMetric"><option value="m3">Verbrauch (m³)</option><option value="daily">Durchschnitt (m³/Tag)</option></select><div id="trendMeters" style="display:grid;gap:5px;margin:12px 0"></div><div id="trendOutput"></div><h3>Einzelauswertung</h3><label for="analysisMeter">Zähler auswählen</label><select id="analysisMeter"></select>
+
 <p class="warn">Zähler können dieselbe Wassermenge mehrfach erfassen. Deshalb wird <strong>kein Netz-Gesamtverbrauch durch Addition aller neun Zähler</strong> ausgewiesen. Für eine echte Wasserbilanz müssen Zu- und Abgänge festgelegt werden.</p>
 <div id="analysisOutput"></div>
 <button class="btn secondary" id="analysisCsv">Auswertung als CSV herunterladen</button></div>
@@ -103,7 +103,36 @@ function analysisRows(meterId,period){
  }
  return {rows:[...buckets.values()].sort((a,b)=>a.label.localeCompare(b.label)),intervals,invalid,points};
 }
+function renderOverview(){
+ const root=$('overviewOutput');root.replaceChildren();const period=$('analysisPeriod').value;const date=$('overviewDate').value||today();const key=periodLabel(bucketStart(dayUTC(date),period),period);
+ const note=document.createElement('p');note.className='small';note.textContent='Zeitraum: '+key+' · Verbrauch nur für abgedeckte Zeit; — = keine gültigen Daten. Keine Addition der Zähler wegen möglicher Doppelzählung.';root.append(note);
+ const wrap=document.createElement('div');wrap.className='tablewrap';const table=document.createElement('table');const head=document.createElement('tr');['Zähler','m³','Ø m³/Tag','Tage'].forEach(x=>{const th=document.createElement('th');th.textContent=x;head.append(th)});table.append(head);
+ meters.forEach(m=>{const r=analysisRows(m.id,period).rows.find(x=>x.label===key);const tr=document.createElement('tr');[m.name,r?fmt(r.m3):'—',r&&r.days?fmt(r.m3/r.days):'—',r?fmt(r.days):'—'].forEach(x=>{const td=document.createElement('td');td.textContent=x;tr.append(td)});table.append(tr)});wrap.append(table);root.append(wrap);
+}
+$('overviewDate').value=today();$('overviewDate').onchange=renderOverview;
+
+const trendColors=['#1263a3','#c2410c','#15803d','#9333ea','#b91c1c','#087e8b','#a16207','#475569','#db2777'];
+const trendSelection=new Map();
+function renderTrend(){
+ const controls=$('trendMeters'),root=$('trendOutput');controls.replaceChildren();root.replaceChildren();
+ const period=$('analysisPeriod').value,metric=$('trendMetric').value;
+ const series=meters.map((m,i)=>({m,color:trendColors[i%trendColors.length],rows:analysisRows(m.id,period).rows}));
+ series.forEach(({m,color})=>{const id=String(m.id);if(!trendSelection.has(id))trendSelection.set(id,true);const l=document.createElement('label');l.style.cssText='display:flex;align-items:center;gap:8px;margin:3px 0;font-size:14px';const c=document.createElement('input');c.type='checkbox';c.checked=trendSelection.get(id);c.style.width='auto';c.onchange=()=>{trendSelection.set(id,c.checked);renderTrend()};const dot=document.createElement('span');dot.style.cssText='width:12px;height:12px;border-radius:50%;background:'+color;l.append(c,dot,document.createTextNode(m.name));controls.append(l)});
+ const active=series.filter(x=>trendSelection.get(String(x.m.id)));const keys=[...new Set(active.flatMap(x=>x.rows.map(r=>r.label)))].sort();
+ if(!keys.length){root.textContent='Noch keine gültigen Verbrauchsintervalle für die ausgewählten Zähler.';return;}
+ const note=document.createElement('p');note.className='small';note.textContent='Alle verfügbaren Zeiträume · geschätzte Verteilung zwischen Ablesungen. Lücken bedeuten fehlende Daten; keine Hochrechnung auf volle Zeiträume.';root.append(note);
+ const ns='http://www.w3.org/2000/svg', svg=document.createElementNS(ns,'svg');const W=Math.max(540,keys.length*55+70),H=300,L=60,R=20,T=20,B=65;svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.style.cssText=`width:${W}px;max-width:none;height:300px;display:block`;
+ const add=(tag,attrs,text)=>{const el=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));if(text!==undefined)el.textContent=text;svg.append(el);return el};
+ const value=r=>metric==='daily'?r.m3/r.days:r.m3;const max=Math.max(1,...active.flatMap(x=>x.rows.map(value)));const x=i=>L+(W-L-R)*(keys.length===1?.5:i/(keys.length-1));const y=v=>T+(H-T-B)*(1-v/max);
+ for(let i=0;i<=4;i++){const v=max*i/4;add('line',{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:'#d9e2e9'});add('text',{x:L-6,y:y(v)+4,'text-anchor':'end','font-size':11,fill:'#607588'},fmt(v))}
+ keys.forEach((k,i)=>add('text',{x:x(i),y:H-B+18,'font-size':10,fill:'#607588',transform:`rotate(45 ${x(i)} ${H-B+18})`},k));
+ active.forEach(s=>{const map=new Map(s.rows.map(r=>[r.label,r]));let prev=null;keys.forEach((k,i)=>{const r=map.get(k);if(!r){prev=null;return}const v=value(r),pt=[x(i),y(v)];if(prev)add('line',{x1:prev[0],y1:prev[1],x2:pt[0],y2:pt[1],stroke:s.color,'stroke-width':2.5});const c=add('circle',{cx:pt[0],cy:pt[1],r:4,fill:s.color});const title=document.createElementNS(ns,'title');title.textContent=s.m.name+' · '+k+': '+fmt(v)+(metric==='daily'?' m³/Tag':' m³');c.append(title);c.addEventListener('click',()=>{detail.textContent=title.textContent});prev=pt})});
+ const detail=document.createElement('p');detail.className='small';detail.textContent='Tippe auf einen Messpunkt für den Wert.';const wrap=document.createElement('div');wrap.style.overflowX='auto';wrap.append(svg);root.append(wrap,detail);
+}
+$('trendMetric').onchange=renderTrend;
+
 function renderAnalysis(){
+ renderOverview();renderTrend();
  const select=$('analysisMeter'),prev=select.value;
  select.replaceChildren();
  const blank=document.createElement('option');blank.value='';blank.textContent='Bitte einen Zähler wählen';select.append(blank);
